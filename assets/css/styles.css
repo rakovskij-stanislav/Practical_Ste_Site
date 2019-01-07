@@ -11,7 +11,7 @@ body
 	white -1px 1px 0, white 1px -1px 0;
 
 	/*background-color: #eee;*/
-	background-image: url(assets/media/backgnd.jpg);
+	background-image: url(../media/backgnd.jpg);
 	font: 1em/1.2 "Helvetica Neue", Helvetica, Arial, Geneva, sans-serif;
 }
 
