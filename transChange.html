@@ -1,0 +1,78 @@
+<html>
+
+<head>
+    <title></title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="js/_main.js" type="text/javascript"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="header-heading"><a href="/index.html"><img src="media/caption.png"></a></h1>
+        </div>
+
+        <div class="nav-bar">
+            <ul class="nav" id="navig">
+                <li><a href="index.html">На главную</a></li>
+                <li><a href="transactions.html">Транзакции</a></li>
+                <li><a href="calculate.html">Расчёт вкладов</a></li>
+            </ul>
+        </div>
+        <div class="content">
+            <div class="main">
+                Тут форма по созданию/изменению транзакции. Если у кукисе transChangeID находится дата и время транзакции, то изменяем ее
+                . Если transChangeID==-1, то это создание новой транзакции
+                <form id="infoTransmitter" onsubmit="prepare2InsertData(); return false;">  Тут отобразить тип транзакции (новая транзакция/изменение транзакции)
+                        <input id="transDateTime" type="datetime-local" value="2018-01-01T12:00">
+                        <select id="transType">
+                                <option value="0" selected="selected">Постуление</option>
+                                <option value="1">Снятие</option>
+                              </select>
+                              <p>Сумма: <input id=amount></input></p>
+                              <button type="button" onclick="prepare2InsertData()">Сохранить</button>
+                </form>
+                Если транзакция старая, то осуществляем запрос инфы из базы данных и изменяем инфу. Нужно изменить всё и вся
+            </div>
+        </div>
+
+        <script>
+            //здесь изложен код, отвечающий за выгрузку, создание и сохранение информации
+            transDateTime = document.getElementById("transDateTime")
+            transType = document.getElementById("transType")
+            amount = document.getElementById("amount")
+
+            transChangeID = getCookie("transID");
+            if (transChangeID == "-1"){
+                console.debug("Это новая транзакция. Выставлены значения по умолчанию.")
+            }
+            else{
+                console.debug("Изменение формы по данным текущей транзакции")
+                transDateTime.value = transChangeID
+                getOneValue2Change(transChangeID);
+                console.debug("Изменение завершено")                
+            }
+
+            function prepare2InsertData(){
+                    transDateTimeVal = document.getElementById("transDateTime").value;
+                    transTypeVal = document.getElementById("transType").value;
+                    amountVal = document.getElementById("amount").value;
+                    if (isNaN(amountVal)){
+                            alert("Сумма должна являться числом");
+                            return false;
+                    }
+                    console.debug("Добавляю/изменяю значения...", transDateTimeVal, transTypeVal, amountVal)
+
+                    insertData(db, transDateTimeVal, transTypeVal, amountVal);
+                    window.location.href = "transactions.html"
+                }
+            
+        </script>
+        <div class="footer">
+            Rakovsky Stanislav, 2018
+        </div>
+    </div>
+
+</body>
+
+</html>

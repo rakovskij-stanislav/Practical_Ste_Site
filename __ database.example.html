@@ -1,0 +1,112 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>БД</title>
+		
+		<script>
+	
+		var db;
+		var version=1.0;
+		var dbName="tizendb";
+		var dbDisplayName="tizen_test_db";
+		var dbSize=2*1024*1024;
+		
+		
+
+		
+		
+		function initDB(){
+			if (window.openDatabase){
+				db=openDatabase(dbName, version, dbDisplayName, dbSize);
+				db.transaction(function(t){
+					t.executeSql("CREATE TABLE Products(id INTEGER PRIMARY KEY,product TEXT, quantity CHAR, cost CHAR)", []);
+					});
+				alert("DB created");
+			}
+			else
+			{alert('Web SQL Database not supported in this browser');}	
+		
+		}
+		initDB();
+		
+
+		
+
+		
+		function insertData(db){
+			var vitem = document.getElementById("item");
+			var vamount = document.getElementById("amount");
+			var vprice = document.getElementById("price");
+			db.transaction(function(t){
+				t.executeSql("INSERT INTO Products(product, quantity, cost) VALUES (?, ?, ?)",
+							[vitem.value, vamount.value, vprice.value])
+							});
+
+		}
+		
+		function ViewDB(db){
+			var html=document.getElementById('tbody01');
+			html = ""
+			db.transaction(function(t){
+				t.executeSql("SELECT * FROM Products", [], 
+					function(tran, r){
+						for (var i=0; i<r.rows.length; i++){
+							var id = r.rows.item(i).id;
+							var product = r.rows.item(i).product;
+							var quantity = r.rows.item(i).quantity;
+							var cost = r.rows.item(i).cost;
+							html.innerHTML+="<tr><td>"+id+"</td><td>"+product+"</td><td>"+quantity+"</td><td>"+cost+"</td></tr>\n"
+						}
+					}
+				)
+		
+			})
+		}
+		
+	function triggerButton(){
+			if (window.openDatabase){
+				db=openDatabase(dbName, version, dbDisplayName, dbSize);
+				insertData(db);
+				ViewDB(db);
+				
+				//insertData(db);
+				//dataView(db);
+				alert('DB OK!');
+				}
+			else
+			{alert("smtng wrong with db");}
+			
+		}
+		</script>
+	
+	</head>
+
+	<body>
+		<table>
+		<thead>
+			<tr>
+				<th>ID</th>
+				<th>Товар</th>
+				<th>Количество</th>
+				<th>Цена</th>
+			</tr>
+		</thead>
+		<tbody id='tbody01'>
+			
+		</tbody>
+		</table>
+		
+		<form name="form1">
+			<h3>Добавление</h3>
+			Введите наименование:<br><input type="text" id="item"><br>
+			Введите количество:<br><input type="text" id="amount"><br>
+			Введите цену:<br><input type="text" id="price"><br>
+			<input type="button" value="Добавить" onClick="triggerButton()"> 
+		</form>
+	
+	</body>
+	
+	
+</html>

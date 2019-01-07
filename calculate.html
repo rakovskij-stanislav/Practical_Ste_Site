@@ -1,0 +1,214 @@
+<html>
+
+<head>
+	<title></title>
+	<link rel="stylesheet" href="css/styles.css">
+	<script src="js/_main.js" type="text/javascript"></script>
+</head>
+
+<body>
+	<div class="container">
+		<div class="header">
+			<h1 class="header-heading"><a href="/index.html"><img src="media/caption.png"></a></h1>
+		</div>
+
+		<div class="nav-bar">
+			<ul class="nav" id="navig">
+				<li><a href="index.html">На главную</a></li>
+				<li><a href="transactions.html">Транзакции</a></li>
+
+			</ul>
+		</div>
+		<div class="content">
+			<div class="main">
+				<div id="calcVkladForm">
+					<h3>Вклад 1</h3>
+					<p>Начислять на остаток <input id="percent1" value=2 style="width: 35px;"></input>% каждые <input id="month1"
+						 value=4 style="width: 35px;"></input>
+						мес.</p>
+					<hr>
+					<h3>Вклад 2</h3>
+					<p>Начислять на остаток <input id="percent2" value=10 style="width: 35px;"></input>% каждые <input id="month2"
+						 value=12 style="width: 35px;"></input>
+						мес.</p>
+					<hr>
+					<h3>Вклад 3</h3>
+					<p>Начислять на остаток <input id="percent3" value=7 style="width: 35px;"></input>% каждые <input id="month3"
+						 value=9 style="width: 35px;"></input>
+						мес.</p>
+					<hr>
+					<button type="button" onclick="checkCalculatedVariables()">Рассчитать</button>
+				</div>
+				<table id="tableForm"></table>
+
+
+			</div>
+		</div>
+
+		<script>
+
+			function addMonths(date, months) {
+				var d = date.getDate();
+				date.setMonth(date.getMonth() + +months);
+				if (date.getDate() != d) {
+					date.setDate(0);
+				}
+				return date;
+			}
+
+			function checkCalculatedVariables() {
+				for (i = 1; i <= 3; i++) {
+					if (isNaN(document.getElementById("percent" + i.toString()).value)) {
+						alert(`Ошибка во вкладе ${i}: процент должен являться числом`)
+						return false;
+					}
+					if (isNaN(document.getElementById("month" + i.toString()).value)) {
+						alert(`Ошибка во вкладе ${i}: количество месяцев должен являться числом`)
+						return false;
+					}
+				}
+				calcVklad();
+
+			}
+
+			function calcVklad() {
+				console.debug("Подготовка...")
+				var vklad1 = {
+					"percent": parseFloat(document.getElementById("percent1").value),
+					"month": parseFloat(document.getElementById("month1").value),
+					"balance": 0,
+					"tempTime": null
+				}
+				var vklad2 = {
+					"percent": parseFloat(document.getElementById("percent2").value),
+					"month": parseFloat(document.getElementById("month2").value),
+					"balance": 0,
+					"tempTime": null
+				}
+				var vklad3 = {
+					"percent": parseFloat(document.getElementById("percent3").value),
+					"month": parseFloat(document.getElementById("month3").value),
+					"balance": 0,
+					"tempTime": null
+				}
+				console.debug(vklad1)
+				var _table = document.getElementById("tableForm");
+
+				/*
+				Будем работать с транзакциями и одновременно заполнять таблицу
+				Колонки: 
+					1) дата+время транзакции
+					2) тип транзакции 
+					3) на сколько прирост (если это не транзакция начисления процента)
+					4-6) баланс после осуществления этой транзакции. Если вычисления были прекращены досрочно, то ничего не выводить
+
+				*/
+				console.debug("Подготовка завершена")
+				_table.innerHTML = "<tr><th>Дата и время</th><th>Тип</th><th>Сумма</th><th>Вклад 1</th><th>Вклад 2</th><th>Вклад 3</th></tr>\n"
+				db.transaction(function (t) {
+					t.executeSql("SELECT * FROM transactions order by DaTi asc", [],
+						function (tran, r) {
+							// если транзакций нет, то досрочно прекратить работу
+							if (r.rows.length == 0) { return true };
+							//иначе просчитать инициирующий транзакт
+							console.debug("Работаю с инициирующим транзактом...")
+							var dateandtime = r.rows.item(0).DaTi;
+							tempDate = new Date(dateandtime)
+							printableDate = tempDate.toString().substr(4, 20)
+							var transType = r.rows.item(0).transType;
+							var amount = r.rows.item(0).amount;
+							if (transType == 0) {
+								console.debug("Инициирующая транзакция - пополнение");
+								console.debug(typeof (dateandtime))
+								vklad1.balance = vklad2.balance = vklad3.balance = amount;
+								//устанавливаем дату следующей проверки
+								vklad1.tempTime = addMonths(new Date(dateandtime), vklad1.month)
+								vklad2.tempTime = addMonths(new Date(dateandtime), vklad2.month)
+								vklad3.tempTime = addMonths(new Date(dateandtime), vklad3.month)
+								console.debug(vklad1.tempTime, vklad2.tempTime, vklad3.tempTime);
+								_table.innerHTML += `<tr bgcolor='B0FFFF'><td>${printableDate}</td><td>Init транзакция</td><td>+${amount}</td><td>${vklad1.balance}</td><td>${vklad2.balance}</td><td>${vklad3.balance}</td></tr>\n`
+							}
+							else { alert("Первая транзакция должна быть транзакцией пополнения!"); return true; }
+
+
+							for (var i = 1; i < r.rows.length; i++) {
+								console.debug("#### Цикл ", i)
+								// получаем данные из базы
+								var dateandtime = r.rows.item(i).DaTi;
+								var transType = r.rows.item(i).transType;
+								var amount = r.rows.item(i).amount;
+								var bgcolor = ["D0FFD0", "FFD0D0"][transType]
+								//проверяем, должно ли произойти за это время начисление транзакта
+								tempDate = new Date(dateandtime)
+								printableDate = tempDate.toString().substr(4, 20)
+								console.log("Текущее время транзакта ", dateandtime, tempDate.toString())
+								console.log("Состояние 1 ", vklad1.tempTime.toString(), tempDate > vklad1.tempTime)
+								console.log("Состояние 2 ", vklad2.tempTime.toString(), tempDate > vklad2.tempTime)
+								console.log("Состояние 3 ", vklad3.tempTime.toString(), tempDate > vklad3.tempTime)
+								while (
+									(vklad1.balance >= 0 && tempDate > vklad1.tempTime) ||
+									(vklad2.balance >= 0 && tempDate > vklad2.tempTime) ||
+									(vklad3.balance >= 0 && tempDate > vklad3.tempTime)
+								) {
+									console.debug("Есть такое дело!", typeof (tempDate));
+									//должно! Ищем наименьший по очередной дате начисления транзакт, делаем начисление
+									console.debug(
+										"Мины", tempDate, vklad1.tempTime, vklad2.tempTime, vklad3.tempTime
+									);
+									if (vklad1.balance >= 0 && vklad1.tempTime.getTime() <= vklad2.tempTime.getTime() && vklad1.tempTime.getTime() <= vklad3.tempTime.getTime()) {
+										console.debug("Ин1");
+										plus = parseFloat((vklad1.balance * vklad1.percent / 100).toFixed(2));
+										vklad1.balance = vklad1.balance + plus;
+										_table.innerHTML += `<tr><td bgcolor='B0B0FF'>${vklad1.tempTime.toString().substr(4, 20)}</td><td bgcolor='B0B0FF'>Начисление процента I</td><td bgcolor='B0B0FF'>+${plus}</td><td bgcolor='B0B0FF'>${vklad1.balance.toFixed(2)}</td><td>${vklad2.balance.toFixed(2)}</td><td>${vklad3.balance.toFixed(2)}</td></tr>\n`
+										console.debug("before", vklad1.tempTime)
+										vklad1.tempTime = addMonths(vklad1.tempTime, vklad1.month)
+										console.debug("after", vklad1.tempTime)
+									}
+									if (vklad2.balance >= 0 && vklad2.tempTime.getTime() <= vklad1.tempTime.getTime() && vklad2.tempTime.getTime() <= vklad3.tempTime.getTime()) {
+										console.debug("Ин2");
+										plus = parseFloat((vklad2.balance * vklad2.percent / 100).toFixed(2));
+										vklad2.balance = vklad2.balance + plus;
+										_table.innerHTML += `<tr><td bgcolor='B0B0FF'>${vklad2.tempTime.toString().substr(4, 20)}</td><td bgcolor='B0B0FF'>Начисление процента II</td><td bgcolor='B0B0FF'>+${plus}</td><td>${vklad1.balance.toFixed(2)}</td><td bgcolor='B0B0FF'>${vklad2.balance.toFixed(2)}</td><td>${vklad3.balance.toFixed(2)}</td></tr>\n`
+										vklad2.tempTime = addMonths(vklad2.tempTime, vklad2.month)
+									}
+									if (vklad3.balance >= 0 && vklad3.tempTime.getTime() <= vklad2.tempTime.getTime() && vklad3.tempTime.getTime() <= vklad1.tempTime.getTime()) {
+										console.debug("Ин3");
+										plus = parseFloat((vklad3.balance * vklad3.percent / 100).toFixed(2));
+										vklad3.balance = vklad3.balance + plus;
+										_table.innerHTML += `<tr><td bgcolor='B0B0FF'>${vklad3.tempTime.toString().substr(4, 20)}</td><td bgcolor='B0B0FF'>Начисление процента III</td><td bgcolor='B0B0FF'>+${plus}</td><td>${vklad1.balance.toFixed(2)}</td><td>${vklad2.balance.toFixed(2)}</td><td bgcolor='B0B0FF'>${vklad3.balance.toFixed(2)}</td></tr>\n`
+										vklad3.tempTime = addMonths(vklad3.tempTime, vklad3.month)
+									}
+
+								}
+								//добавляем информацию о транзакте в базу
+								//делаем прибавку всем балансам + проверяем, ушли ли они в минус
+								_vk1print = _vk2print = _vk3print = "###"
+								if (vklad1.balance >= 0) {
+									vklad1.balance += amount
+									_vk1print = vklad1.balance.toFixed(2)
+								}
+								if (vklad2.balance >= 0) {
+									vklad2.balance += amount
+									_vk2print = vklad2.balance.toFixed(2)
+								}
+								if (vklad3.balance >= 0) {
+									vklad3.balance += amount
+									_vk3print = vklad3.balance.toFixed(2)
+								}
+								_table.innerHTML += "<tr bgcolor='" + bgcolor + "'><td>" + printableDate + "</td><td>" + ["Поступление", "Снятие"][transType] + "</td><td>" + amount + "</td><td>" + _vk1print + "</td><td>" + _vk2print + "</td><td>" + _vk3print + "</td></tr>\n"
+							}
+						}
+					)
+
+				})
+			}
+
+		</script>
+		<div class="footer">
+			Rakovsky Stanislav, 2018
+		</div>
+	</div>
+
+</body>
+
+</html>

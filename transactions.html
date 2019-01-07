@@ -1,0 +1,42 @@
+<html>
+
+<head>
+    <title></title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="js/_main.js" type="text/javascript"></script>
+</head>
+
+<body onload="printFromDB2Table()">
+    <div class="container">
+        <div class="header">
+            <h1 class="header-heading"><a href="/index.html"><img src="media/caption.png"></a></h1>
+        </div>
+
+        <div class="nav-bar">
+            <ul class="nav" id="navig">
+                <li><a href="index.html">На главную</a></li>
+                <li><a href="calculate.html">Расчёт вкладов</a></li>
+            </ul>
+        </div>
+        <div class="content">
+            <div class="main">
+                <button onclick='document.cookie = "transID=-1";  window.location.href = "transChange.html";'>Новая транзакция</button>
+                <button onclick='printFromDB2Table()'>Обновить</button>
+                <button onclick='confirmDelete()'>Удалить все транзакции</button>
+                <br><br>
+                <p>Самая ранняя по дате транзакция должна быть положительной</p>
+                <table id="transactionTable">
+                    <tr>
+                        <th>Дата и время</th><th>Тип транзакции</th><th>Сумма</th><th>Изменить</th><th>Удалить</th>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div class="footer">
+            Rakovsky Stanislav, 2018
+        </div>
+    </div>
+
+</body>
+
+</html>
