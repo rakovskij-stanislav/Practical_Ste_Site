@@ -101,7 +101,6 @@
 					2) тип транзакции 
 					3) на сколько прирост (если это не транзакция начисления процента)
 					4-6) баланс после осуществления этой транзакции. Если вычисления были прекращены досрочно, то ничего не выводить
-
 				*/
 				console.debug("Подготовка завершена")
 				_table.innerHTML = "<tr><th>Дата и время</th><th>Тип</th><th>Сумма</th><th>Вклад 1</th><th>Вклад 2</th><th>Вклад 3</th></tr>\n"
@@ -136,7 +135,7 @@
 								// получаем данные из базы
 								var dateandtime = r.rows.item(i).DaTi;
 								var transType = r.rows.item(i).transType;
-								var amount = r.rows.item(i).amount;
+								var amount = [1, -1][transType]* r.rows.item(i).amount ;
 								var bgcolor = ["D0FFD0", "FFD0D0"][transType]
 								//проверяем, должно ли произойти за это время начисление транзакта
 								tempDate = new Date(dateandtime)
